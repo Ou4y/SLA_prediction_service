@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  ai-service:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: opsmind
+      MYSQL_PASSWORD: opsmind
+      MYSQL_DATABASE: opsmind_ai
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: opsmind_ai
+      MYSQL_USER: opsmind
+      MYSQL_PASSWORD: opsmind
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
