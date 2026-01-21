@@ -5,6 +5,7 @@ from app.sla_model import predict_sla_risk, feature_columns
 from app.feedback import SLAFeedback
 from app.risk import risk_level
 from app.explain import explain_risk
+from app.db import get_db_connection
 
 app = FastAPI(title="OpsMind AI Service")
 
@@ -20,7 +21,7 @@ def prepare_features(request: SLAPredictRequest):
     # Encode categorical variables
     df_encoded = pd.get_dummies(df)
 
-    # 🔑 THIS IS THE MOST IMPORTANT LINE
+    # Ensure all expected feature columns are present
     df_encoded = df_encoded.reindex(
         columns=feature_columns,
         fill_value=0
@@ -52,13 +53,25 @@ def predict_sla(request: SLAPredictRequest):
     
 @app.post("/feedback/sla")
 def log_feedback(feedback: SLAFeedback):
-    with open("sla_feedback_log.csv", "a") as f:
-        f.write(
-            f"{feedback.ticket_id},"
-            f"{feedback.ai_probability},"
-            f"{feedback.admin_decision},"
-            f"{feedback.final_outcome}\n"
-        )
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    query = """
+        INSERT INTO sla_feedback
+        (ticket_id, ai_probability, admin_decision, final_outcome)
+        VALUES (%s, %s, %s, %s)
+    """
+
+    cursor.execute(query, (
+        feedback.ticket_id,
+        feedback.ai_probability,
+        feedback.admin_decision,
+        feedback.final_outcome
+    ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
 
     return {"status": "feedback saved"}
 
