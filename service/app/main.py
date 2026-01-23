@@ -6,6 +6,10 @@ from app.feedback import SLAFeedback
 from app.risk import risk_level
 from app.explain import explain_risk
 from app.db import get_db_connection
+from app.rabbitmq import publish_retrain_event
+
+
+
 
 app = FastAPI(title="OpsMind AI Service")
 
@@ -56,6 +60,29 @@ def log_feedback(feedback: SLAFeedback):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    cursor.execute("""
+        INSERT INTO sla_feedback
+        (ticket_id, ai_probability, admin_decision, final_outcome)
+        VALUES (%s, %s, %s, %s)
+    """, (
+        feedback.ticket_id,
+        feedback.ai_probability,
+        feedback.admin_decision,
+        feedback.final_outcome
+    ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    # 🔑 Trigger retraining if needed
+    if should_trigger_retrain("sla_model_v1"):
+        publish_retrain_event("sla_model_v1")
+
+    return {"status": "feedback saved"}
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
     query = """
         INSERT INTO sla_feedback
         (ticket_id, ai_probability, admin_decision, final_outcome)
@@ -89,3 +116,28 @@ def predict_sla_dashboard(request: SLAPredictRequest):
 @app.get("/")
 def read_root():
     return {"status": "ok", "service": "OpsMind AI Service"}
+
+def should_trigger_retrain(model_name: str, threshold: int = 500) -> bool:
+    """
+    Checks how many new feedback rows exist since last training.
+    Returns True if retraining should be triggered.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM sla_feedback
+        WHERE id > (
+            SELECT last_trained_feedback_id
+            FROM model_training_meta
+            WHERE model_name = %s
+        )
+    """, (model_name,))
+
+    count = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return count >= threshold
