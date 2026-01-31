@@ -3,6 +3,7 @@ version: "3.9"
 services:
   ai-service:
     build: .
+    container_name: opsmind-ai-service
     ports:
       - "8000:8000"
     environment:
@@ -10,38 +11,12 @@ services:
       MYSQL_USER: opsmind
       MYSQL_PASSWORD: opsmind
       MYSQL_DATABASE: opsmind_ai
-    depends_on:
-      - mysql
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    networks:
+      - opsmind-net
+    restart: unless-stopped
 
-  mysql:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: opsmind_ai
-      MYSQL_USER: opsmind
-      MYSQL_PASSWORD: opsmind
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    restart: always
-    ports:
-      - "8080:80"
-    environment:
-      PMA_HOST: mysql
-      PMA_USER: opsmind
-      PMA_PASSWORD: opsmind
-    depends_on:
-      - mysql
-  rabbitmq:
-    image: rabbitmq:3-management
-    ports:
-      - "5672:5672"     # AMQP
-      - "15672:15672"   # Management UI
-
-volumes:
-  mysql_data:
+networks:
+  opsmind-net:
+    external: true
