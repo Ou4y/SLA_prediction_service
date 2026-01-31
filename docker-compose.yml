@@ -1,18 +1,12 @@
 version: "3.9"
 
 services:
-  ai-service:
+  ticket-service:
     build: .
-    container_name: opsmind-ai-service
     ports:
-      - "8000:8000"
-    environment:
-      MYSQL_HOST: mysql
-      MYSQL_USER: opsmind
-      MYSQL_PASSWORD: opsmind
-      MYSQL_DATABASE: opsmind_ai
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
+      - "3000:3000"
+    env_file:
+      - .env
     networks:
       - opsmind-net
     restart: unless-stopped
