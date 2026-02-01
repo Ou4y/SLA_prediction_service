@@ -46,5 +46,4 @@ def publish_retrain_event(model_name: str):
         body=json.dumps(message),
         properties=pika.BasicProperties(delivery_mode=2),
     )
-
-    connection.close()
+    

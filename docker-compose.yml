@@ -19,10 +19,30 @@ services:
       RABBITMQ_URL: amqp://opsmind:opsmind@rabbitmq:5672
       
     networks:
-      - opsmind-net
+      - opsmind_shared_bus
+    restart: unless-stopped
+
+  ai-ticket-consumer:
+    image: ai-service-ai-service:latest
+    container_name: opsmind-ai-ticket-consumer
+    environment:
+      # RabbitMQ (shared infrastructure)
+      RABBITMQ_URL: amqp://opsmind:opsmind@rabbitmq:5672
+
+      # Queue name published by ticket-service (adjust if your ticket service uses a different one)
+      TICKET_CREATED_QUEUE: ticket_created
+
+      # Keep DB vars available in case you later choose to persist predictions
+      MYSQL_HOST: mysql
+      MYSQL_USER: opsmind
+      MYSQL_PASSWORD: opsmind
+      MYSQL_DATABASE: opsmind_ai
+    command: ["python", "-m", "training.ticket_consumer"]
+    networks:
+      - opsmind_shared_bus
     restart: unless-stopped
 
 networks:
-  opsmind-net:
+  opsmind_shared_bus:
     external: true
-    name: opsmind-net
+    name: opsmind_shared_bus
