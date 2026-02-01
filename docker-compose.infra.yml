@@ -1,0 +1,70 @@
+version: "3.9"
+
+# Shared infrastructure (MySQL + RabbitMQ) meant to be reused by multiple services.
+# Start it with:
+#   docker compose -f docker-compose.infra.yml up -d
+# Stop it with:
+#   docker compose -f docker-compose.infra.yml down
+#
+# Any app stack that needs to use these services should join the same external
+# network (see `networks.shared_bus`).
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: opsmind-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: opsmind_ai
+      MYSQL_USER: opsmind
+      MYSQL_PASSWORD: opsmind
+    # Expose to host only if you need to connect from your laptop (e.g. MySQL Workbench).
+    # Container-to-container connections should use host `mysql` (network DNS) and port 3306.
+    ports:
+      - "3306:3306"
+    volumes:
+      - opsmind_mysql_data:/var/lib/mysql
+    networks:
+      - shared_bus
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: opsmind-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: opsmind
+      PMA_PASSWORD: opsmind
+    ports:
+      - "8080:80"
+    networks:
+      - shared_bus
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: opsmind-rabbitmq
+    restart: unless-stopped
+    # Expose to host only if you need to connect from your laptop.
+    # Container-to-container connections should use host `rabbitmq` and port 5672.
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    volumes:
+      - opsmind_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - shared_bus
+
+volumes:
+  opsmind_mysql_data:
+    name: opsmind_mysql_data
+  opsmind_rabbitmq_data:
+    name: opsmind_rabbitmq_data
+
+networks:
+  shared_bus:
+    # This creates a named docker network that other compose projects can join.
+    name: opsmind_shared_bus
+    driver: bridge

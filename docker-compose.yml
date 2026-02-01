@@ -1,12 +1,23 @@
-version: "3.9"
-
 services:
-  ticket-service:
-    build: .
+  ai-service:
+    image: ai-service-ai-service:latest
+    container_name: opsmind-ai-service
     ports:
-      - "3000:3000"
-    env_file:
-      - .env
+      - "8000:8000"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      
+      # FIX: Explicitly pass these variables so Python doesn't default to localhost
+      MYSQL_HOST: mysql
+      MYSQL_USER: opsmind
+      MYSQL_PASSWORD: opsmind
+      MYSQL_DATABASE: opsmind_ai # Ensure this matches the DB you want to use
+      
+      # Keep these if your code uses them specifically (e.g. Prisma)
+      DATABASE_URL: mysql://opsmind:opsmind@mysql:3306/Tickets
+      RABBITMQ_URL: amqp://opsmind:opsmind@rabbitmq:5672
+      
     networks:
       - opsmind-net
     restart: unless-stopped
@@ -14,3 +25,4 @@ services:
 networks:
   opsmind-net:
     external: true
+    name: opsmind-net
