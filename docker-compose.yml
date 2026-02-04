@@ -6,7 +6,7 @@ services:
       - "8000:8000"
     environment:
       NODE_ENV: production
-      PORT: 3001
+      PORT: 8000
       
       # FIX: Explicitly pass these variables so Python doesn't default to localhost
       MYSQL_HOST: mysql
@@ -19,7 +19,7 @@ services:
       RABBITMQ_URL: amqp://opsmind:opsmind@rabbitmq:5672
       
     networks:
-      - opsmind_shared_bus
+      - opsmind-net
     restart: unless-stopped
 
   ai-ticket-consumer:
@@ -39,10 +39,8 @@ services:
       MYSQL_DATABASE: opsmind_ai
     command: ["python", "-m", "training.ticket_consumer"]
     networks:
-      - opsmind_shared_bus
+      - opsmind-net
     restart: unless-stopped
-
 networks:
-  opsmind_shared_bus:
+  opsmind-net:
     external: true
-    name: opsmind_shared_bus
