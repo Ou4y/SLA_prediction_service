@@ -17,7 +17,7 @@ services:
       # Keep these if your code uses them specifically (e.g. Prisma)
       DATABASE_URL: mysql://opsmind:opsmind@mysql:3306/Tickets
       RABBITMQ_URL: amqp://opsmind:opsmind@rabbitmq:5672
-      CORS_ORIGINS: "*"
+      CORS_ORIGINS: "http://localhost:8085,http://localhost:3000,http://localhost:5173,*"
       
     networks:
       - opsmind-net

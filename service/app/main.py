@@ -69,13 +69,16 @@ def log_feedback(feedback: SLAFeedback):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Clamp ai_probability to valid range (0.0 to 1.0)
+    clamped_probability = max(0.0, min(1.0, feedback.ai_probability))
+
     cursor.execute("""
         INSERT INTO sla_feedback
         (ticket_id, ai_probability, admin_decision, final_outcome)
         VALUES (%s, %s, %s, %s)
     """, (
         feedback.ticket_id,
-        feedback.ai_probability,
+        clamped_probability,
         feedback.admin_decision,
         feedback.final_outcome
     ))

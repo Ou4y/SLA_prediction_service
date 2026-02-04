@@ -6,7 +6,7 @@ from app.db import get_db_connection
 from training.feature_engineering import build_features
 
 MODEL_NAME = "sla_model_v1"
-BATCH_SIZE = 500
+BATCH_SIZE = 10
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
