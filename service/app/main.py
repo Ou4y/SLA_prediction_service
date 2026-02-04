@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
+import os
 from app.schemas import SLAPredictRequest
 from app.sla_model import predict_sla_risk, feature_columns
 from app.feedback import SLAFeedback
@@ -8,10 +10,17 @@ from app.explain import explain_risk
 from app.db import get_db_connection
 from app.rabbitmq import publish_retrain_event
 
-
-
-
 app = FastAPI(title="OpsMind AI Service")
+
+# Configure CORS
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def prepare_features(request: SLAPredictRequest):
     df = pd.DataFrame([{
