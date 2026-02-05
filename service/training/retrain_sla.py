@@ -68,11 +68,17 @@ def update_training_meta(last_used_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Convert to regular Python int to avoid numpy type issues
+    last_used_id = int(last_used_id)
+    model_name = str(MODEL_NAME)  # Ensure this is also a regular Python string
+    
+    print(f"DEBUG: Updating with last_used_id={last_used_id} (type: {type(last_used_id)}), model_name={model_name} (type: {type(model_name)})")
+
     cursor.execute("""
         UPDATE model_training_meta
         SET last_trained_feedback_id = %s
         WHERE model_name = %s
-    """, (last_used_id, MODEL_NAME))
+    """, (last_used_id, model_name))
 
     conn.commit()
     cursor.close()
@@ -91,7 +97,13 @@ def main():
 
     save_model(model, X.columns)
 
+    # Convert numpy types to native Python types
     new_last_id = df["id"].max()
+    if hasattr(new_last_id, 'item'):
+        new_last_id = new_last_id.item()
+    else:
+        new_last_id = int(new_last_id)
+    
     update_training_meta(new_last_id)
 
     print("Model retrained successfully.")

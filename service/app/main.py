@@ -41,18 +41,6 @@ def prepare_features(request: SLAPredictRequest):
     )
 
     return df_encoded
-    data = {
-        "support_level": [request.support_level],
-        "priority": [request.priority],
-        "created_hour": [request.created_hour],
-        "created_day": [request.created_day],
-        "assigned_team": [request.assigned_team]
-    }
-
-    df = pd.DataFrame(data)
-    df_encoded = pd.get_dummies(df)
-
-    return df_encoded
 
 @app.post("/predict-sla")
 def predict_sla(request: SLAPredictRequest):
@@ -72,15 +60,24 @@ def log_feedback(feedback: SLAFeedback):
     # Clamp ai_probability to valid range (0.0 to 1.0)
     clamped_probability = max(0.0, min(1.0, feedback.ai_probability))
 
+    # Debug logging
+    print(f"DEBUG: Feedback data - ticket_id: {feedback.ticket_id}, support_level: {feedback.support_level}")
+    
     cursor.execute("""
         INSERT INTO sla_feedback
-        (ticket_id, ai_probability, admin_decision, final_outcome)
-        VALUES (%s, %s, %s, %s)
+        (ticket_id, ai_probability, admin_decision, final_outcome, 
+         support_level, priority, created_hour, created_day, assigned_team)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         feedback.ticket_id,
         clamped_probability,
         feedback.admin_decision,
-        feedback.final_outcome
+        feedback.final_outcome,
+        feedback.support_level,
+        feedback.priority,
+        feedback.created_hour,
+        feedback.created_day,
+        feedback.assigned_team
     ))
 
     conn.commit()
@@ -90,27 +87,6 @@ def log_feedback(feedback: SLAFeedback):
     # 🔑 Trigger retraining if needed
     if should_trigger_retrain("sla_model_v1"):
         publish_retrain_event("sla_model_v1")
-
-    return {"status": "feedback saved"}
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    query = """
-        INSERT INTO sla_feedback
-        (ticket_id, ai_probability, admin_decision, final_outcome)
-        VALUES (%s, %s, %s, %s)
-    """
-
-    cursor.execute(query, (
-        feedback.ticket_id,
-        feedback.ai_probability,
-        feedback.admin_decision,
-        feedback.final_outcome
-    ))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
 
     return {"status": "feedback saved"}
 
@@ -129,7 +105,7 @@ def predict_sla_dashboard(request: SLAPredictRequest):
 def read_root():
     return {"status": "ok", "service": "OpsMind AI Service"}
 
-def should_trigger_retrain(model_name: str, threshold: int = 500) -> bool:
+def should_trigger_retrain(model_name: str, threshold: int = 10) -> bool:
     """
     Checks how many new feedback rows exist since last training.
     Returns True if retraining should be triggered.
