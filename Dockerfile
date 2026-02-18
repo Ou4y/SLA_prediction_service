@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Install dependencies first (leverages Docker layer caching)
 COPY requirements.txt .
-RUN pip install --no-cache-dir --timeout 120 -r requirements.txt
+RUN pip install --no-cache-dir --timeout 600 --retries 5 -r requirements.txt
 
 # Copy application source and model artefacts
 COPY src/ src/
