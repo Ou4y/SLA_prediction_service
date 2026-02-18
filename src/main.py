@@ -11,6 +11,7 @@ from typing import AsyncGenerator
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.models import get_store, load_models
 from src.preprocess import INT_TO_PRIORITY, preprocess_for_inference
@@ -52,6 +53,14 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
